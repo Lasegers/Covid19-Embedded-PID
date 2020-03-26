@@ -13,14 +13,14 @@ bool is_blocking = false;
 
 float MAX_DISPLACEMENT=500;
 float offset = 250;
-int exhale_speed = 50;
+int exhale_speed = 15;
 
 unsigned long current_time = 0;
 unsigned long previous_exhale_time = 0;
 float bpm = 0;
 
 //----------------------------------
-float Kp = 0.1;
+float Kp = 0.005;
 float Ki = 0.0;
 //----------------------------------
 float PID_value = 0;
@@ -133,13 +133,13 @@ int BREATHE_CONTROL_Regulate()
       PID_value_I = (PID_value_I<-offset)?-offset:PID_value_I;
       PID_value = PID_value_P + PID_value_I;
       if (PID_value>0) PID_value=0;
-      return (int)PID_value;
+      return -15;//(int)PID_value;
     }
     else if (Breathe_mode==EXHALE)
     {       
       PID_value_I=0;
       PID_value_P=0;     
-      return exhale_speed;
+      return 15;//exhale_speed;
     }    
 }
 //------------------------------------------------------------------------------

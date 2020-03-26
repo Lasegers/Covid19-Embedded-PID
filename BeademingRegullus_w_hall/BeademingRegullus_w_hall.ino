@@ -1,4 +1,4 @@
-//#include <AS5040.h>
+#include <util/atomic.h> // this library includes the ATOMIC_BLOCK macro.
 #include "TimerThree.h"
 
 unsigned long timestamp; 
@@ -14,13 +14,7 @@ volatile int END_SWITCH_VALUE_EXHALED = 0;
 volatile bool isFlow2PatientRead = false;
 volatile float Flow2Patient = 0;
 volatile int duty_output = 0;
-
-//#define CSpin   10
-//#define CLKpin  11
-//#define DOpin   12
-
-//AS5040 enc (CLKpin, CSpin, DOpin);
-
+volatile unsigned int arm_angle = 0;
 //----------------------------------------------------------------------------------------------------
 //-----------------------------------------    BEGIN OF SETUP ----------------------------------------
 void setup()
@@ -30,26 +24,23 @@ void setup()
   //timestamp = millis();
   //--- set up the pressure sensors here
   Serial.println("Setting up pressure sensors");
-  /*while(!BME280_Setup()) // must start, if not, do not continue
+  while(!BME280_Setup()) // must start, if not, do not continue
   {
     delay(100);  
-  }*/
+  }
+  Serial.println("Setting up HALL sensor: ");
+  if (HALL_SENSOR_INIT()) {Serial.println(" OK");}
+  else {Serial.println(" Failed");}
+  
   //--- set up flow sensors here, if init fails, we can continue
   Serial.print("Setting up flow sensor: ");
-  if (FLOW_SENSOR_INIT()) Serial.println(" OK");
-  else Serial.println(" Failed");
+  if (FLOW_SENSOR_INIT()) {Serial.println(" OK");}
+  else {Serial.println(" Failed");}
   //--- set up the pins for the end switches
   Serial.println("Setting up endswitches");
   pinMode(ENDSWITCH_INHALE_PIN,INPUT_PULLUP);
   pinMode(ENDSWITCH_EXHALE_PIN,INPUT_PULLUP);
-  
-  //Serial.println("Setting up encoder");
-  //if (!enc.begin ()) Serial.println ("Error setting up AS5040") ; 
   MOTOR_CONTROL_setp();
-  // init timer 3 
-  //--- start the timer 3 to make sure our control loops runs at a constant interval
-  Timer3.initialize(25000);         // initialize timer3 in us, set 25 ms timing
-  Timer3.attachInterrupt(controller);  // attaches callback() as a timer overflow interrupt
   //---------------------------------------------------------------------------------------------------------
   // read all sensors here to make sure readings are correct
   Serial.println("Setting desired pressure to 50 cmH2O");
@@ -66,19 +57,29 @@ void setup()
   float flow = 0;
   if (FLOW_SENSOR_Measure(&flow))   Serial.println(flow);
   else Serial.println("Failed");
+  // init timer 3 
+  //--- start the timer 3 to make sure our control loops runs at a constant interval
+  Timer3.initialize(5000);         // initialize timer3 in us, set 200 ms timing
+  Timer3.attachInterrupt(controller);  // attaches callback() as a timer overflow interrupt
 }
 //----------------------------------------------------------------------------------------------------
 //-----------------------------------------    END OF SETUP ------------------------------------------
 void loop()
 {     
+
+  isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
+  isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
   Serial.print("Patientpressure: ");
   Serial.print(CurrentPressurePatient);
   Serial.print(";PatientAirFlow: ");
+  Serial.print(isFlow2PatientRead?"TRUE,":"FALSE,");
   Serial.print(Flow2Patient);
   Serial.print(";Inhale SW=");
   Serial.print(END_SWITCH_VALUE_INHALED);
   Serial.print(";Exhale SW=");
-  Serial.print(END_SWITCH_VALUE_EXHALED);  
+  Serial.print(END_SWITCH_VALUE_EXHALED); 
+  Serial.print(";Arm angle = ");
+  Serial.print(arm_angle);
   Serial.print(";PWM value = ");
   Serial.println(duty_output);
   
@@ -92,6 +93,7 @@ void loop()
   //--- read buttons here
   //int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN);
   //int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);
+
 
   /*if (timestamp+time_diff<=new_time)
   {
@@ -148,30 +150,30 @@ void loop()
       Serial.println("Pressure sensors failing");
     }
     timestamp=new_time;
-  }*/  
+  }*/ 
+  //controller(); 
 }
 //----------------------------------------------------------------------------------
 void controller()
 {
   // Handle main control loop  
   // read sensors here, this consumes a lot of time
-  END_SWITCH_VALUE_INHALED = digitalRead(ENDSWITCH_INHALE_PIN);
-  END_SWITCH_VALUE_EXHALED = digitalRead(ENDSWITCH_EXHALE_PIN);
-
-  isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
-  isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
   
-  if (isPatientPressureCorrect)
-  {   
-    BREATHE_setCurrentTime(millis());      
-    BREATHE_CONTROL_setCurrentPressure(CurrentPressurePatient);      
-      
-    duty_output = BREATHE_CONTROL_Regulate();  
-      
-    BREATHE_setToEXHALE(END_SWITCH_VALUE_INHALED);
-    BREATHE_setToINHALE(END_SWITCH_VALUE_EXHALED);
+    END_SWITCH_VALUE_INHALED = digitalRead(ENDSWITCH_INHALE_PIN);
+    END_SWITCH_VALUE_EXHALED = digitalRead(ENDSWITCH_EXHALE_PIN);
 
-    MOTOR_CONTROL_setValue(duty_output);
-  }
+    //arm_angle = HALL_SENSOR_read();
+    if (isPatientPressureCorrect)
+    {   
+      BREATHE_setCurrentTime(millis());      
+      BREATHE_CONTROL_setCurrentPressure(CurrentPressurePatient);      
+        
+      duty_output = BREATHE_CONTROL_Regulate();  
+        
+      BREATHE_setToEXHALE(END_SWITCH_VALUE_INHALED);
+      BREATHE_setToINHALE(END_SWITCH_VALUE_EXHALED);
+  
+      MOTOR_CONTROL_setValue(duty_output);
+    }
 }
 //----------------------------------------------------------------------------------

@@ -26,24 +26,24 @@
 #define BME_SPI_MOSI 51 
 #define BME_SPI_CS 48
 //-----------------------------------------------------------------------------------------------
-Adafruit_BMP280 bmp1;//(0x76);
-Adafruit_BME280 bmp2;//(0x77); // use I2C interface
-Adafruit_BME280 bme3(BME_SPI_CS); // hardware SPI
-Adafruit_Sensor *bmp_pressure_patient1 = bmp1.getPressureSensor();
-Adafruit_Sensor *bmp_pressure_patient2 = bmp2.getPressureSensor();
-Adafruit_Sensor *bme_pressure_ref = bme3.getPressureSensor();
+volatile Adafruit_BMP280 bmp1;//(0x76);
+volatile Adafruit_BME280 bmp2;//(0x77); // use I2C interface
+volatile Adafruit_BME280 bme3(BME_SPI_CS); // hardware SPI
+volatile Adafruit_Sensor *bmp_pressure_patient1 = bmp1.getPressureSensor();
+volatile Adafruit_Sensor *bmp_pressure_patient2 = bmp2.getPressureSensor();
+volatile Adafruit_Sensor *bme_pressure_ref = bme3.getPressureSensor();
 
-bool PRESSURE_SENSOR1_INITIALIZED = false;
-bool PRESSURE_SENSOR2_INITIALIZED = false;
-bool PRESSURE_SENSOR3_INITIALIZED = false;
+volatile bool PRESSURE_SENSOR1_INITIALIZED = false;
+volatile bool PRESSURE_SENSOR2_INITIALIZED = false;
+volatile bool PRESSURE_SENSOR3_INITIALIZED = false;
 
-Adafruit_MPL3115A2 redundant = Adafruit_MPL3115A2();
+volatile Adafruit_MPL3115A2 redundant = Adafruit_MPL3115A2();
 
 #define hPa2cmh2o_scale 1.0197442889221
 //-----------------------------------------------------------------------------------------------
 bool BME280_Setup() 
 {
-    if (!bmp1.begin(0x76))
+    if (!bmp1.begin())
     {   
         Serial.println("BMP280 sensor 1 not found"); 
         return false;        
