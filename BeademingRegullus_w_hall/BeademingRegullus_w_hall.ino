@@ -44,9 +44,9 @@ void setup()
   //---------------------------------------------------------------------------------------------------------
   // read all sensors here to make sure readings are correct
   Serial.println("Setting desired pressure to 50 cmH2O");
-  BREATHE_CONTROL_setPEAKPressure(50);
+  BREATHE_CONTROL_setPEAKPressure(20);
   BREATHE_CONTROL_setTIDALVolume(450);
-  Serial.println("Reading all pressure sensors available");
+  /*Serial.println("Reading all pressure sensors available");
   Serial.print("Pressure sensor 1 = ");
   Serial.println(BME280_readpressure1_cmH2O());
   Serial.print("Pressure sensor 2 = ");
@@ -56,7 +56,7 @@ void setup()
   Serial.print("Flow sensor = ");
   float flow = 0;
   if (FLOW_SENSOR_Measure(&flow))   Serial.println(flow);
-  else Serial.println("Failed");
+  else Serial.println("Failed");*/
   // init timer 3 
   //--- start the timer 3 to make sure our control loops runs at a constant interval
   Timer3.initialize(5000);         // initialize timer3 in us, set 200 ms timing
@@ -66,22 +66,22 @@ void setup()
 //-----------------------------------------    END OF SETUP ------------------------------------------
 void loop()
 {     
-
   isPatientPressureCorrect = BME280_readPressurePatient(&CurrentPressurePatient);
   isFlow2PatientRead = FLOW_SENSOR_Measure(&Flow2Patient);
+    
   Serial.print("Patientpressure: ");
-  Serial.print(CurrentPressurePatient);
-  Serial.print(";PatientAirFlow: ");
-  Serial.print(isFlow2PatientRead?"TRUE,":"FALSE,");
-  Serial.print(Flow2Patient);
-  Serial.print(";Inhale SW=");
+  Serial.println(CurrentPressurePatient);
+  Serial.print("PatientAirFlow: ");
+  //Serial.println(isFlow2PatientRead?"TRUE,":"FALSE,");
+  Serial.println(Flow2Patient);
+  /*Serial.print("Inhale SW=");
   Serial.print(END_SWITCH_VALUE_INHALED);
   Serial.print(";Exhale SW=");
   Serial.print(END_SWITCH_VALUE_EXHALED); 
   Serial.print(";Arm angle = ");
-  Serial.print(arm_angle);
-  Serial.print(";PWM value = ");
-  Serial.println(duty_output);
+  Serial.print(arm_angle);*/
+  /*Serial.print("PWM value = ");
+  Serial.println(duty_output);*/
   
   //Hall_sensor_position=enc.read ();
   //Serial.println(Hall_sensor_position,DEC);
@@ -93,7 +93,6 @@ void loop()
   //--- read buttons here
   //int END_SWITCH_VALUE_STOP = digitalRead(ENDSIWTCH_FULL_PIN);
   //int END_SWITCH_VALUE_START = digitalRead(ENDSWITCH_PUSH_PIN);
-
 
   /*if (timestamp+time_diff<=new_time)
   {

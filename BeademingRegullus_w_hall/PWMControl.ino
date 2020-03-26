@@ -15,12 +15,13 @@ void MOTOR_CONTROL_setValue(int value)
   if (value>=0)
   {
       value = value>255?255:value;
-      motorController.TurnRight(60);//value); //0->255
+      motorController.TurnRight(value); //0->255
   }
   else
   {
+      value = -value;
       value = value>255?255:value;
-      motorController.TurnLeft(150);//value); //0->255
+      motorController.TurnLeft(value); //0->255
   }    
 }
 //----------------------------------------------------------------------------------

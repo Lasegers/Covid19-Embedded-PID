@@ -13,19 +13,29 @@ bool is_blocking = false;
 
 float MAX_DISPLACEMENT=500;
 float offset = 250;
-int exhale_speed = 15;
+int exhale_speed = 50;
 
 unsigned long current_time = 0;
 unsigned long previous_exhale_time = 0;
 float bpm = 0;
 
 //----------------------------------
-float Kp = 0.005;
+float Kp = 10;
 float Ki = 0.0;
+float Kd = 0.01;
+float r = 0.5;  // forgetting factor for D-action
+//-----------------------------------
+float error = 0; 
+float error_t_m_1 = 0;
+float dError = 0;
+float dError_t_m_1 = 0;
+float dError_unfiltered = 0;
+
 //----------------------------------
 float PID_value = 0;
 float PID_value_P = 0;
 float PID_value_I = 0;
+float PID_value_D = 0;
 //----------------------------------
 float PLUNGER_POSITION = 0;
 
@@ -123,23 +133,31 @@ void BREATHE_setToINHALE(int end_switch)
 //------------------------------------------------------------------------------
 int BREATHE_CONTROL_Regulate()
 {
-    float diff = current_inhale_pressure-PEAK_PRESSURE_SETPOINT;
+    float error = current_inhale_pressure-PEAK_PRESSURE_SETPOINT;
     if (Breathe_mode==INHALE)
     {
+      dError = r*dError_t_m_1 + 1000.0*(1-r)*(error-error_t_m_1)/time_diff;
+      dError_unfiltered =  1000.0*(error-error_t_m_1)/time_diff;
+      PID_value_D = Kd*-dError;
       
-      PID_value_P = Kp*diff; 
-      PID_value_I += Ki*diff;
+      dError_t_m_1 = dError;
+      error_t_m_1 = error;
+      
+      PID_value_P = Kp*error; 
+      PID_value_I += Ki*error;
       PID_value_I = (PID_value_I>offset)?offset:PID_value_I;
       PID_value_I = (PID_value_I<-offset)?-offset:PID_value_I;
-      PID_value = PID_value_P + PID_value_I;
+      PID_value = PID_value_P + PID_value_I + PID_value_D;
+   
       if (PID_value>0) PID_value=0;
-      return -15;//(int)PID_value;
+      return (int)PID_value;
     }
     else if (Breathe_mode==EXHALE)
     {       
       PID_value_I=0;
-      PID_value_P=0;     
-      return 15;//exhale_speed;
+      PID_value_P=0;    
+      PID_value_D=0; 
+      return exhale_speed;
     }    
 }
 //------------------------------------------------------------------------------
